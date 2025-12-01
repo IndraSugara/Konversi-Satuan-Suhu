@@ -1,4 +1,4 @@
-# 📚 DOKUMENTASI SISTEM PORTFOLIO TERDISTRIBUSI
+# DOKUMENTASI SISTEM PORTFOLIO TERDISTRIBUSI
 
 **Versi**: 1.0  
 **Tanggal**: 1 Desember 2025  
@@ -21,20 +21,20 @@
 
 ---
 
-## 🎯 RINGKASAN SISTEM
+##  RINGKASAN SISTEM
 
 ### Deskripsi
 Platform portfolio terdistribusi berbasis microservices yang memungkinkan pengguna untuk membuat, berbagi, dan berkolaborasi pada project portfolio. Sistem ini didesain untuk deployment multi-laptop dengan komunikasi antar-service melalui REST API dan message broker.
 
 ### Fitur Utama
-- ✅ **Autentikasi & Otorisasi**: JWT-based authentication dengan refresh token
-- ✅ **Manajemen Profile**: User profiles dengan avatar upload
-- ✅ **Portfolio Projects**: CRUD projects dengan media upload (gambar/video)
-- ✅ **Media Processing**: Automatic thumbnail generation untuk gambar
-- ✅ **Search Engine**: Full-text search menggunakan Elasticsearch
-- ✅ **Likes & Comments**: Engagement system di external service (PHP)
-- ✅ **Real-time Analytics**: Project views dan statistics
-- ✅ **Responsive UI**: Mobile-friendly frontend
+-  **Autentikasi & Otorisasi**: JWT-based authentication dengan refresh token
+-  **Manajemen Profile**: User profiles dengan avatar upload
+-  **Portfolio Projects**: CRUD projects dengan media upload (gambar/video)
+-  **Media Processing**: Automatic thumbnail generation untuk gambar
+-  **Search Engine**: Full-text search menggunakan Elasticsearch
+-  **Likes & Comments**: Engagement system di external service (PHP)
+-  **Real-time Analytics**: Project views dan statistics
+-  **Responsive UI**: Mobile-friendly frontend
 
 ### Teknologi Stack
 
@@ -57,7 +57,7 @@ Platform portfolio terdistribusi berbasis microservices yang memungkinkan penggu
 
 ---
 
-## 🏗️ ARSITEKTUR SISTEM
+##  ARSITEKTUR SISTEM
 
 ### Diagram Arsitektur
 
@@ -134,7 +134,7 @@ Platform portfolio terdistribusi berbasis microservices yang memungkinkan penggu
 
 ---
 
-## 🌐 TOPOLOGI MULTI-LAPTOP
+##  TOPOLOGI MULTI-LAPTOP
 
 ### Deployment Configuration
 
@@ -232,7 +232,7 @@ External Access:
 
 ---
 
-## 🧩 KOMPONEN SISTEM
+##  KOMPONEN SISTEM
 
 ### 1. Auth Service (Port 8001)
 
@@ -586,7 +586,7 @@ if (avatarUrl && avatarUrl.startsWith('http://')) {
 
 ---
 
-## 💾 DATABASE SCHEMA
+##  DATABASE SCHEMA
 
 ### Schema: `distributed_system`
 
@@ -1655,3 +1655,4 @@ docs/
 **Last Updated:** December 1, 2025  
 **Document Version:** 1.0  
 **System Version:** 1.0
+
