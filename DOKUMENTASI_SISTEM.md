@@ -14,10 +14,6 @@
 4. [Komponen Sistem](#komponen-sistem)
 5. [Database Schema](#database-schema)
 6. [API Endpoints](#api-endpoints)
-7. [Setup & Instalasi](#setup--instalasi)
-8. [Konfigurasi](#konfigurasi)
-9. [Deployment](#deployment)
-10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -956,3 +952,4 @@ Response:
 ```
 
 ---
+
