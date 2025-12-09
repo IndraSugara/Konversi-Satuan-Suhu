@@ -51,6 +51,19 @@ Distributed microservices system untuk platform portfolio dengan FastAPI, Postgr
      │               │                   │                       │
      └───────────────┴───────────────────┴───────────────────────┘
                         RabbitMQ (Port: 5672)
+
+                    EXTERNAL SERVICES (Proxied via NGINX)
+    ┌────────────────────────────────────────────────────────────┐
+    │                                                              │
+    │  ┌────────────────────────┐    ┌────────────────────────┐  │
+    │  │   Chat Service         │    │ Comments/Likes Service │  │
+    │  │   23.0.3.60:8006       │    │   23.0.3.39:8080       │  │
+    │  │   Node.js + Socket.IO  │    │   PHP7 / CI3     │  │
+    │  │   /api/chat/*          │    │   /api/likes/*         │  │
+    │  │   Real-time messaging  │    │   Social interactions  │  │
+    │  └────────────────────────┘    └────────────────────────┘  │
+    │                                                              │
+    └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -258,6 +271,150 @@ Distributed microservices system untuk platform portfolio dengan FastAPI, Postgr
 
 ---
 
+## External Services (Proxied via NGINX)
+
+### 7. Chat Service (External - 23.0.3.60:8006)
+
+**Technology:** Node.js + Socket.IO + PostgreSQL
+
+**Responsibilities:**
+
+- Real-time messaging
+- WebSocket connections
+- Conversation management
+- Message persistence
+- User online status
+- Message delivery tracking
+
+**Endpoints:**
+
+- `GET /api/chat/conversations` - List user conversations
+- `GET /api/chat/conversations/{conversation_id}/messages` - Get messages
+- `POST /api/chat/conversations` - Create/get conversation
+- `POST /api/chat/conversations/{conversation_id}/messages` - Send message
+- `POST /api/chat/register-user` - Sync user from Auth Service
+- `GET /api/chat/users/search` - Search users for chat
+
+**WebSocket Events:**
+
+- `connect` - Client connection
+- `join_conversation` - Join chat room
+- `new_message` - Real-time message
+- `message_sent` - Message delivery confirmation
+- `typing` - Typing indicator
+- `user_online` - Online status updates
+
+**Database Tables (External PostgreSQL):**
+
+- `chat_users` - Cached user info from Profile Service
+- `conversations` - Chat conversations
+- `conversation_participants` - Many-to-many relationship
+- `messages` - Chat messages
+
+**Authentication:**
+
+- JWT token from Auth Service
+- API key for service-to-service (e.g., profile sync)
+
+**NGINX Route:**
+
+- `/api/chat/*` → `http://23.0.3.60:8006`
+- `/socket.io/*` → `http://23.0.3.60:8006/socket.io/` (WebSocket support)
+
+**Features:**
+
+- Real-time bidirectional communication
+- Message history persistence
+- Conversation search
+- Unread message tracking
+- Auto-sync with Profile Service for user data
+
+---
+
+### 8. Comments & Likes Service (External - 23.0.3.39:8080)
+
+**Technology:** CodeIgniter 3 (PHP 7.4+) + MySQL/PostgreSQL
+
+**Responsibilities:**
+
+- Like/unlike projects
+- Comment CRUD operations
+- Comment likes
+- Statistics aggregation
+- User interaction tracking
+
+**Endpoints:**
+
+- `POST /likes/{project_id}` - Toggle like on project
+- `GET /check/{project_id}` - Check if user liked project
+- `GET /stats/project/{project_id}` - Get project stats (likes + comments count)
+- `POST /comments` - Create comment
+- `GET /comments/project/{project_id}` - Get project comments
+- `DELETE /comments/{comment_id}` - Delete comment
+- `POST /comments/{comment_id}/like` - Like a comment
+
+**Database Tables (External MySQL/PostgreSQL):**
+
+- `likes` - Project likes (user_id, project_id, created_at)
+- `comments` - Project comments
+- `comment_likes` - Comment likes
+
+**Authentication:**
+
+- JWT token from Auth Service
+- User info extracted from token (CI3 JWT library)
+
+**NGINX Route:**
+
+- `/api/likes/*` → `http://23.0.3.39:8080`
+
+**Response Formats:**
+
+```json
+// Stats
+{
+  "data": {
+    "total_likes": 42,
+    "total_comments": 15
+  }
+}
+
+// Like status
+{
+  "is_liked": true,
+  "action": "liked"
+}
+
+// Comments
+{
+  "data": [
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "username": "string",
+      "comment_text": "string",
+      "created_at": "timestamp"
+    }
+  ]
+}
+```
+
+**Features:**
+
+- Fast aggregation for stats display
+- Optimistic locking for concurrent likes
+- Comment threading (future)
+- Spam detection (future)
+- Rate limiting per user
+
+**Performance:**
+
+- Timeout: 1-3 seconds (with fallback to cached data)
+- Caching strategy: 30 seconds TTL in frontend
+- Optimistic updates in UI for instant feedback
+
+---
+
 ## Infrastructure Components
 
 ### PostgreSQL (Port 5432)
@@ -435,6 +592,70 @@ Distributed microservices system untuk platform portfolio dengan FastAPI, Postgr
    - Return data
 5. Track view in project_views table
 ```
+
+### 5. Like & Comment on Project (External Service)
+
+```
+1. User → Click like button on project
+2. Frontend → Optimistic update (instant UI feedback)
+3. Frontend → POST /api/likes/{project_id} (JWT token)
+4. NGINX → Proxy to Comments/Likes Service (23.0.3.39:8080)
+5. Comments/Likes Service → Verify JWT token
+6. Comments/Likes Service → Toggle like in PostgreSQL
+7. Return like status
+
+// Stats update (parallel)
+8. Frontend → GET /api/likes/stats/project/{project_id}
+9. Comments/Likes Service → Aggregate likes & comments count
+10. Return stats (cached for 30s in frontend)
+
+// Comment flow
+11. User → Submit comment
+12. Frontend → POST /api/likes/comments
+13. Comments/Likes Service → Insert comment
+14. Frontend → Refresh comments list
+```
+
+**Optimization:**
+
+- Timeout: 1-3 seconds max
+- Fallback to cached stats on timeout
+- Optimistic UI updates for instant feedback
+
+### 6. Real-time Chat (External Service)
+
+```
+// Initial connection
+1. User → Open messages page
+2. Frontend → Connect to Socket.IO (ws://localhost/socket.io/)
+3. NGINX → Proxy WebSocket to Chat Service (23.0.3.60:8006)
+4. Chat Service → Verify JWT token
+5. Socket.IO → Establish WebSocket connection
+
+// Load conversations
+6. Frontend → GET /api/chat/conversations
+7. Chat Service → Query conversations from PostgreSQL
+8. Return conversation list with last message
+
+// Send message
+9. User → Type & send message
+10. Frontend → Emit 'new_message' via Socket.IO
+11. Chat Service → Save to PostgreSQL
+12. Chat Service → Emit to recipient's socket
+13. Both users receive message in real-time
+
+// User sync (background)
+- Chat Service → Periodically sync user data from Profile Service
+- Cache user info in chat_users table for fast lookups
+```
+
+**Features:**
+
+- Real-time bidirectional communication
+- WebSocket for instant message delivery
+- Automatic reconnection on disconnect
+- Typing indicators (future)
+- Read receipts (future)
 
 ---
 
@@ -678,26 +899,30 @@ Future: `/api/v2/*` for breaking changes
 
 ## Technologies Summary
 
-| Component         | Technology    | Version      | Purpose          |
-| ----------------- | ------------- | ------------ | ---------------- |
-| Auth Service      | FastAPI       | 0.104.1      | Authentication   |
-| Profile Service   | FastAPI       | 0.104.1      | User profiles    |
-| Portfolio Service | FastAPI       | 0.104.1      | Projects         |
-| Media Service     | Flask         | 3.0.0        | File uploads     |
-| Search Service    | Flask         | 3.0.0        | Search           |
-| Database          | PostgreSQL    | 13           | Data persistence |
-| Cache             | Redis         | 7-alpine     | Caching          |
-| Message Queue     | RabbitMQ      | 3-management | Async messaging  |
-| Search Engine     | Elasticsearch | 8.11.0       | Full-text search |
-| Object Storage    | MinIO         | Latest       | Media storage    |
-| Reverse Proxy     | Nginx         | Alpine       | Routing          |
-| ASGI Server       | Uvicorn       | 0.24.0       | FastAPI runtime  |
+| Component          | Technology        | Version      | Purpose             | Location        |
+| ------------------ | ----------------- | ------------ | ------------------- | --------------- |
+| Auth Service       | FastAPI           | 0.104.1      | Authentication      | Internal (8001) |
+| Profile Service    | FastAPI           | 0.104.1      | User profiles       | Internal (8002) |
+| Portfolio Service  | FastAPI           | 0.104.1      | Projects            | Internal (8003) |
+| Media Service      | Flask             | 3.0.0        | File uploads        | Internal (8004) |
+| Search Service     | Flask             | 3.0.0        | Search              | Internal (8005) |
+| **Chat Service**   | **Node.js**       | **Latest**   | **Real-time chat**  | **External**    |
+| **Comments/Likes** | **CodeIgniter 3** | **3.1.13**   | **Social features** | **External**    |
+| Database           | PostgreSQL        | 13           | Data persistence    | Internal (5432) |
+| Cache              | Redis             | 7-alpine     | Caching             | Internal (6379) |
+| Message Queue      | RabbitMQ          | 3-management | Async messaging     | Internal (5672) |
+| Search Engine      | Elasticsearch     | 8.11.0       | Full-text search    | Internal (9200) |
+| Object Storage     | MinIO             | Latest       | Media storage       | Internal (9000) |
+| Reverse Proxy      | Nginx             | Alpine       | Routing & Proxy     | Internal (80)   |
+| ASGI Server        | Uvicorn           | 0.24.0       | FastAPI runtime     | Internal        |
 
 ---
 
 ## Quick Reference
 
 ### Service Ports
+
+**Internal Services:**
 
 - Auth: 8001
 - Profile: 8002
@@ -710,6 +935,11 @@ Future: `/api/v2/*` for breaking changes
 - Elasticsearch: 9200
 - MinIO: 9000 (API), 9001 (Console)
 - Nginx: 80
+
+**External Services (Proxied):**
+
+- Chat Service: 23.0.3.60:8006 → `/api/chat/*`, `/socket.io/*`
+- Comments/Likes: 23.0.3.39:8080 → `/api/likes/*`
 
 ### Important Commands
 
