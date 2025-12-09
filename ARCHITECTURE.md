@@ -333,7 +333,7 @@ Distributed microservices system untuk platform portfolio dengan FastAPI, Postgr
 
 ### 8. Comments & Likes Service (External - 23.0.3.39:8080)
 
-**Technology:** CodeIgniter 3 (PHP 7.4+) + MySQL/PostgreSQL
+**Technology:** CodeIgniter 3 (PHP 7.4+) + PostgreSQL
 
 **Responsibilities:**
 
@@ -353,7 +353,7 @@ Distributed microservices system untuk platform portfolio dengan FastAPI, Postgr
 - `DELETE /comments/{comment_id}` - Delete comment
 - `POST /comments/{comment_id}/like` - Like a comment
 
-**Database Tables (External MySQL/PostgreSQL):**
+**Database Tables (PostgreSQL):**
 
 - `likes` - Project likes (user_id, project_id, created_at)
 - `comments` - Project comments
@@ -970,3 +970,4 @@ curl http://localhost:8003/health  # Portfolio
 **Last Updated:** December 9, 2025  
 **Architecture Version:** 1.0  
 **Status:** Production Ready
+
